@@ -6,7 +6,6 @@ import tensorflow as tf
 import numpy as np
 
 from sys import stderr
-
 from PIL import Image
 
 CONTENT_LAYERS = ('relu4_2', 'relu5_2')
@@ -19,9 +18,9 @@ except NameError:
 
 
 def stylize(network, initial, initial_noiseblend, content, styles, preserve_colors, iterations,
-        content_weight, content_weight_blend, style_weight, style_layer_weight_exp, style_blend_weights, tv_weight,
-        learning_rate, beta1, beta2, epsilon, pooling,
-        print_iterations=None, checkpoint_iterations=None):
+            content_weight, content_weight_blend, style_weight, style_layer_weight_exp, style_blend_weights, tv_weight,
+            learning_rate, beta1, beta2, epsilon, pooling,
+            print_iterations=None, checkpoint_iterations=None):
     """
     Stylize images.
 
@@ -84,7 +83,8 @@ def stylize(network, initial, initial_noiseblend, content, styles, preserve_colo
             initial = np.array([vgg.preprocess(initial, vgg_mean_pixel)])
             initial = initial.astype('float32')
             noise = np.random.normal(size=shape, scale=np.std(content) * 0.1)
-            initial = (initial) * initial_content_noise_coeff + (tf.random_normal(shape) * 0.256) * (1.0 - initial_content_noise_coeff)
+            initial = (initial) * initial_content_noise_coeff + (tf.random_normal(shape) * 0.256) * (
+                1.0 - initial_content_noise_coeff)
         image = tf.Variable(initial)
         net = vgg.net_preloaded(vgg_weights, image, pooling)
 
@@ -97,8 +97,9 @@ def stylize(network, initial, initial_noiseblend, content, styles, preserve_colo
         content_losses = []
         for content_layer in CONTENT_LAYERS:
             content_losses.append(content_layers_weights[content_layer] * content_weight * (2 * tf.nn.l2_loss(
-                    net[content_layer] - content_features[content_layer]) /
-                    content_features[content_layer].size))
+                net[content_layer] - content_features[content_layer]) /
+                                                                                            content_features[
+                                                                                                content_layer].size))
         content_loss += reduce(tf.add, content_losses)
 
         # style loss
@@ -112,17 +113,18 @@ def stylize(network, initial, initial_noiseblend, content, styles, preserve_colo
                 feats = tf.reshape(layer, (-1, number))
                 gram = tf.matmul(tf.transpose(feats), feats) / size
                 style_gram = style_features[i][style_layer]
-                style_losses.append(style_layers_weights[style_layer] * 2 * tf.nn.l2_loss(gram - style_gram) / style_gram.size)
+                style_losses.append(
+                    style_layers_weights[style_layer] * 2 * tf.nn.l2_loss(gram - style_gram) / style_gram.size)
             style_loss += style_weight * style_blend_weights[i] * reduce(tf.add, style_losses)
 
         # total variation denoising
-        tv_y_size = _tensor_size(image[:,1:,:,:])
-        tv_x_size = _tensor_size(image[:,:,1:,:])
+        tv_y_size = _tensor_size(image[:, 1:, :, :])
+        tv_x_size = _tensor_size(image[:, :, 1:, :])
         tv_loss = tv_weight * 2 * (
-                (tf.nn.l2_loss(image[:,1:,:,:] - image[:,:shape[1]-1,:,:]) /
-                    tv_y_size) +
-                (tf.nn.l2_loss(image[:,:,1:,:] - image[:,:,:shape[2]-1,:]) /
-                    tv_x_size))
+            (tf.nn.l2_loss(image[:, 1:, :, :] - image[:, :shape[1] - 1, :, :]) /
+             tv_y_size) +
+            (tf.nn.l2_loss(image[:, :, 1:, :] - image[:, :, :shape[2] - 1, :]) /
+             tv_x_size))
         # overall loss
         loss = content_loss + style_loss + tv_loss
 
@@ -175,7 +177,8 @@ def stylize(network, initial, initial_noiseblend, content, styles, preserve_colo
                         styled_grayscale_rgb = gray2rgb(styled_grayscale)
 
                         # 2
-                        styled_grayscale_yuv = np.array(Image.fromarray(styled_grayscale_rgb.astype(np.uint8)).convert('YCbCr'))
+                        styled_grayscale_yuv = np.array(
+                            Image.fromarray(styled_grayscale_rgb.astype(np.uint8)).convert('YCbCr'))
 
                         # 3
                         original_yuv = np.array(Image.fromarray(original_image.astype(np.uint8)).convert('YCbCr'))
@@ -190,7 +193,6 @@ def stylize(network, initial, initial_noiseblend, content, styles, preserve_colo
                         # 5
                         img_out = np.array(Image.fromarray(combined_yuv, 'YCbCr').convert('RGB'))
 
-
                     yield (
                         (None if last_step else i),
                         img_out
@@ -201,8 +203,10 @@ def _tensor_size(tensor):
     from operator import mul
     return reduce(mul, (d.value for d in tensor.get_shape()), 1)
 
+
 def rgb2gray(rgb):
-    return np.dot(rgb[...,:3], [0.299, 0.587, 0.114])
+    return np.dot(rgb[..., :3], [0.299, 0.587, 0.114])
+
 
 def gray2rgb(gray):
     w, h = gray.shape

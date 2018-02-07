@@ -19,14 +19,17 @@ VGG19_LAYERS = (
     'relu5_3', 'conv5_4', 'relu5_4'
 )
 
+
 def load_net(data_path):
     data = scipy.io.loadmat(data_path)
     if not all(i in data for i in ('layers', 'classes', 'normalization')):
-        raise ValueError("You're using the wrong VGG19 data. Please follow the instructions in the README to download the correct data.")
+        raise ValueError(
+            "You're using the wrong VGG19 data. Please follow the instructions in the README to download the correct data.")
     mean = data['normalization'][0][0][0]
     mean_pixel = np.mean(mean, axis=(0, 1))
     weights = data['layers'][0]
     return weights, mean_pixel
+
 
 def net_preloaded(weights, input_image, pooling):
     net = {}
@@ -49,23 +52,23 @@ def net_preloaded(weights, input_image, pooling):
     assert len(net) == len(VGG19_LAYERS)
     return net
 
+
 def _conv_layer(input, weights, bias):
     conv = tf.nn.conv2d(input, tf.constant(weights), strides=(1, 1, 1, 1),
-            padding='SAME')
+                        padding='SAME')
     return tf.nn.bias_add(conv, bias)
 
 
 def _pool_layer(input, pooling):
     if pooling == 'avg':
         return tf.nn.avg_pool(input, ksize=(1, 2, 2, 1), strides=(1, 2, 2, 1),
-                padding='SAME')
+                              padding='SAME')
     else:
         return tf.nn.max_pool(input, ksize=(1, 2, 2, 1), strides=(1, 2, 2, 1),
-                padding='SAME')
+                              padding='SAME')
 
 def preprocess(image, mean_pixel):
     return image - mean_pixel
-
 
 def unprocess(image, mean_pixel):
     return image + mean_pixel
